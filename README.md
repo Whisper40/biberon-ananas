@@ -10,6 +10,7 @@ Application Android de suivi du quotidien de bébé, inspirée du thème Materia
 - Biberon : début modifiable et quantité de 10 à 300 mL par incréments de 10, ou N/A.
 - Poids au centième de kilogramme et taille au centimètre entier.
 - Modification et suppression d’événements enregistrés.
+- Export JSON et restauration de tous les profils, événements et du profil actif, sur le modèle de Recettes Ananas.
 - Données conservées localement sur l’appareil avec SharedPreferences ; aucune synchronisation externe.
 - Recherche de mises à jour GitHub sur les canaux Stable et Bêta, avec téléchargement et installation d’APK sur Android.
 

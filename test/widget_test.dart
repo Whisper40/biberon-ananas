@@ -55,6 +55,11 @@ void main() {
     expect(find.text('Bonjour, Zoé'), findsOneWidget);
     expect(find.text('Ajouter un événement'), findsOneWidget);
     expect(find.byType(NavigationBar), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Enfants et préférences'));
+    await tester.pumpAndSettle();
+    expect(find.text('Exporter mes données'), findsOneWidget);
+    expect(find.text('Restaurer une sauvegarde'), findsOneWidget);
   });
 
   testWidgets('valide un biberon et ouvre le journal filtré', (tester) async {

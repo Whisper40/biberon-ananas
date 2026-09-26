@@ -1,3 +1,7 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import '../models/baby.dart';
@@ -28,6 +32,7 @@ class _HomePageState extends State<HomePage> {
   int _tab = 0;
   BabyEventType? _journalFilter;
   int _journalRevision = 0;
+  bool _isBackupBusy = false;
 
   Baby? get _activeBaby => widget.repository.activeBaby;
 
@@ -95,6 +100,94 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  Future<void> _exportBackup() async {
+    if (_isBackupBusy) return;
+    setState(() => _isBackupBusy = true);
+    try {
+      final now = DateTime.now();
+      String two(int value) => value.toString().padLeft(2, '0');
+      final timestamp =
+          '${now.year}${two(now.month)}${two(now.day)}_${two(now.hour)}${two(now.minute)}${two(now.second)}';
+      final saved = await FilePicker.saveFile(
+        dialogTitle: 'Exporter la sauvegarde Biberon Ananas',
+        fileName: 'biberon_ananas_$timestamp.json',
+        mimeType: 'application/json',
+        type: FileType.custom,
+        allowedExtensions: const ['json'],
+        bytes: Uint8List.fromList(utf8.encode(widget.repository.exportJson())),
+      );
+      if (mounted && saved != null) {
+        _showBackupMessage('Sauvegarde exportée.');
+      }
+    } catch (error) {
+      if (mounted) _showBackupMessage('Export impossible : $error');
+    } finally {
+      if (mounted) setState(() => _isBackupBusy = false);
+    }
+  }
+
+  Future<void> _restoreBackup() async {
+    if (_isBackupBusy) return;
+    setState(() => _isBackupBusy = true);
+    try {
+      final picked = await FilePicker.pickFile(
+        dialogTitle: 'Choisir une sauvegarde Biberon Ananas',
+        type: FileType.custom,
+        allowedExtensions: const ['json'],
+      );
+      if (picked == null || !mounted) return;
+      final backup = widget.repository.parseBackupData(
+        utf8.decode(await picked.readAsBytes()),
+      );
+      if (!mounted) return;
+
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          icon: const Icon(Icons.warning_amber_rounded),
+          title: const Text('Remplacer les données actuelles ?'),
+          content: Text(
+            'Cette restauration va remplacer ${widget.repository.babies.length} profil(s) et ${widget.repository.events.length} événement(s) par ${backup.babies.length} profil(s) et ${backup.events.length} événement(s). Cette action est irréversible.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Annuler'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Restaurer'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true || !mounted) return;
+
+      await widget.repository.restoreBackup(backup);
+      if (!mounted) return;
+      setState(() {
+        _tab = 0;
+        _journalFilter = null;
+        _journalRevision++;
+      });
+      _showBackupMessage(
+        '${backup.babies.length} profil(s) et ${backup.events.length} événement(s) restauré(s).',
+      );
+    } on FormatException catch (error) {
+      if (mounted) _showBackupMessage('Sauvegarde invalide : ${error.message}');
+    } catch (error) {
+      if (mounted) _showBackupMessage('Restauration impossible : $error');
+    } finally {
+      if (mounted) setState(() => _isBackupBusy = false);
+    }
+  }
+
+  void _showBackupMessage(String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
+
   Future<void> _selectMenuItem(String? value) async {
     if (value == null) return;
     if (value.startsWith('baby:')) {
@@ -102,6 +195,10 @@ class _HomePageState extends State<HomePage> {
       if (mounted) setState(() => _journalRevision++);
     } else if (value == 'add-baby') {
       await _addBaby();
+    } else if (value == 'export-backup') {
+      await _exportBackup();
+    } else if (value == 'restore-backup') {
+      await _restoreBackup();
     } else if (value.startsWith('channel:')) {
       final channel = UpdateChannel.values.firstWhere(
         (candidate) => candidate.name == value.substring(8),
@@ -149,6 +246,23 @@ class _HomePageState extends State<HomePage> {
                   contentPadding: EdgeInsets.zero,
                   leading: Icon(Icons.person_add_alt_1_rounded),
                   title: Text('Ajouter un enfant'),
+                ),
+              ),
+              const PopupMenuDivider(),
+              const PopupMenuItem<String>(
+                value: 'export-backup',
+                child: ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(Icons.save_alt_rounded),
+                  title: Text('Exporter mes données'),
+                ),
+              ),
+              const PopupMenuItem<String>(
+                value: 'restore-backup',
+                child: ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(Icons.settings_backup_restore_rounded),
+                  title: Text('Restaurer une sauvegarde'),
                 ),
               ),
               const PopupMenuDivider(),
