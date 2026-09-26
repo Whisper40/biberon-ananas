@@ -5,7 +5,7 @@ Application Android de suivi du quotidien de bébé, inspirée du thème Materia
 ## Fonctionnalités
 
 - Plusieurs profils enfant : prénom, sexe et date de naissance ; sélection de l’enfant actif.
-- Journal local par enfant, daté par défaut d’aujourd’hui, consultable pour les jours passés et filtrable par catégorie.
+- Journal local par enfant affichant automatiquement les événements des 30 derniers jours, filtrable par catégorie, avec les écarts datés entre chaque événement.
 - Allaitement et tirage : sein gauche, droit ou les deux, début modifiable, minuteur avec confirmation d’arrêt, durée ajustable manuellement.
 - Biberon : début modifiable et quantité de 10 à 300 mL par incréments de 10, ou N/A.
 - Poids au centième de kilogramme et taille au centimètre entier.
@@ -35,7 +35,7 @@ flutter build apk --debug
 
 ## Version et mises à jour Android
 
-La version est déclarée dans `pubspec.yaml` sous la forme `X.Y.Z+build`. Le `versionCode` Android combine les quatre composantes afin de rester croissant d’une release à l’autre. Chaque composante doit rester comprise entre 0 et 99. La version courante est `1.0.0+2`.
+La version est déclarée dans `pubspec.yaml` sous la forme `X.Y.Z+build`. Le `versionCode` Android combine les quatre composantes afin de rester croissant d’une release à l’autre. Chaque composante doit rester comprise entre 0 et 99. La version courante est `1.0.0+3`.
 
 L’application vérifie les releases GitHub du dépôt `Whisper40/biberon-ananas` : Stable consulte la dernière release stable ; Bêta recherche la version la plus élevée parmi les releases publiées et accepte les pré-releases. Une release installable doit inclure un APK signé compatible avec l’identifiant `com.biberon.biberon_ananas`.
 

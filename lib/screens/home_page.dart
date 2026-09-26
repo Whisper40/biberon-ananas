@@ -70,7 +70,7 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       _tab = 1;
       if (event == null) {
-        _journalFilter = result.type;
+        _journalFilter = null;
         _journalRevision++;
       }
     });
@@ -553,7 +553,7 @@ class _EventActionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final (icon, tint) = switch (type) {
       BabyEventType.breastfeeding => (
-        Icons.favorite_rounded,
+        Icons.child_care_rounded,
         const Color(0xFFFCE3E2),
       ),
       BabyEventType.bottle => (

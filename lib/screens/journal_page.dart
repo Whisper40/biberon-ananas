@@ -21,45 +21,24 @@ class JournalPage extends StatefulWidget {
 }
 
 class _JournalPageState extends State<JournalPage> {
-  late DateTime _selectedDate;
   BabyEventType? _filter;
 
   @override
   void initState() {
     super.initState();
-    _selectedDate = DateTime.now();
     _filter = widget.initialFilter;
-  }
-
-  bool _sameDay(DateTime left, DateTime right) =>
-      left.year == right.year &&
-      left.month == right.month &&
-      left.day == right.day;
-
-  void _changeDay(int delta) {
-    final next = _selectedDate.add(Duration(days: delta));
-    if (next.isAfter(DateTime.now())) return;
-    setState(() => _selectedDate = next);
-  }
-
-  Future<void> _pickDay() async {
-    final date = await showDatePicker(
-      context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime(2000),
-      lastDate: DateTime.now(),
-      helpText: 'Choisir une journée',
-    );
-    if (date != null) setState(() => _selectedDate = date);
   }
 
   @override
   Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final firstDateTime = now.subtract(const Duration(days: 30));
     final filtered =
         widget.events
             .where(
               (event) =>
-                  _sameDay(event.startedAt, _selectedDate) &&
+                  !event.startedAt.isBefore(firstDateTime) &&
+                  !event.startedAt.isAfter(now) &&
                   (_filter == null || event.type == _filter),
             )
             .toList()
@@ -68,39 +47,16 @@ class _JournalPageState extends State<JournalPage> {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
           child: Column(
             children: [
-              Card(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  children: [
-                    IconButton(
-                      onPressed: () => _changeDay(-1),
-                      tooltip: 'Jour précédent',
-                      icon: const Icon(Icons.chevron_left_rounded),
-                    ),
-                    Expanded(
-                      child: TextButton.icon(
-                        onPressed: _pickDay,
-                        icon: const Icon(Icons.calendar_month_rounded),
-                        label: Text(
-                          _dayLabel(_selectedDate),
-                          style: Theme.of(context).textTheme.titleMedium
-                              ?.copyWith(fontWeight: FontWeight.w700),
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: _sameDay(_selectedDate, DateTime.now())
-                          ? null
-                          : () => _changeDay(1),
-                      tooltip: 'Jour suivant',
-                      icon: const Icon(Icons.chevron_right_rounded),
-                    ),
-                  ],
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  '30 derniers jours',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
               const SizedBox(height: 12),
@@ -130,11 +86,14 @@ class _JournalPageState extends State<JournalPage> {
         ),
         Expanded(
           child: filtered.isEmpty
-              ? _EmptyJournal(date: _selectedDate, filter: _filter)
+              ? _EmptyJournal(filter: _filter)
               : ListView.separated(
                   padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
                   itemCount: filtered.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 10),
+                  separatorBuilder: (context, index) => _TimelineGap(
+                    newerEvent: filtered[index],
+                    olderEvent: filtered[index + 1],
+                  ),
                   itemBuilder: (context, index) => _EventTile(
                     event: filtered[index],
                     onEdit: () => widget.onEdit(filtered[index]),
@@ -143,6 +102,49 @@ class _JournalPageState extends State<JournalPage> {
                 ),
         ),
       ],
+    );
+  }
+}
+
+class _TimelineGap extends StatelessWidget {
+  const _TimelineGap({required this.newerEvent, required this.olderEvent});
+
+  final BabyEvent newerEvent;
+  final BabyEvent olderEvent;
+
+  @override
+  Widget build(BuildContext context) {
+    final elapsed = newerEvent.startedAt.difference(olderEvent.startedAt);
+    return SizedBox(
+      height: 54,
+      child: Row(
+        children: [
+          SizedBox(
+            width: 50,
+            child: Center(
+              child: Container(
+                width: 2,
+                height: 32,
+                color: Theme.of(context).colorScheme.outlineVariant,
+              ),
+            ),
+          ),
+          Icon(
+            Icons.schedule_rounded,
+            size: 16,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              '${_durationLabel(elapsed.inSeconds)} depuis ${_dateTimeLabel(olderEvent.startedAt)}',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -192,7 +194,7 @@ class _EventTile extends StatelessWidget {
     };
     final (icon, color) = switch (event.type) {
       BabyEventType.breastfeeding => (
-        Icons.favorite_rounded,
+        Icons.child_care_rounded,
         const Color(0xFFFCE3E2),
       ),
       BabyEventType.bottle => (
@@ -210,6 +212,7 @@ class _EventTile extends StatelessWidget {
       BabyEventType.height => (Icons.height_rounded, const Color(0xFFE1F2E8)),
     };
     return Card(
+      key: ValueKey('journal-event-${event.id}'),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
@@ -234,7 +237,7 @@ class _EventTile extends StatelessWidget {
                   Text(details, style: Theme.of(context).textTheme.bodyMedium),
                   const SizedBox(height: 3),
                   Text(
-                    _timeLabel(event.startedAt),
+                    _dateTimeLabel(event.startedAt),
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
@@ -270,9 +273,8 @@ class _EventTile extends StatelessWidget {
 }
 
 class _EmptyJournal extends StatelessWidget {
-  const _EmptyJournal({required this.date, required this.filter});
+  const _EmptyJournal({required this.filter});
 
-  final DateTime date;
   final BabyEventType? filter;
 
   @override
@@ -297,8 +299,8 @@ class _EmptyJournal extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             filter == null
-                ? 'Rien n’est enregistré le ${_dayLabel(date)}. Les événements ajoutés apparaîtront ici.'
-                : 'Aucun événement « ${filter!.label.toLowerCase()} » ce jour-là.',
+                ? 'Aucun événement enregistré au cours des 30 derniers jours.'
+                : 'Aucun événement « ${filter!.label.toLowerCase()} » au cours des 30 derniers jours.',
             textAlign: TextAlign.center,
           ),
         ],
@@ -307,11 +309,8 @@ class _EmptyJournal extends StatelessWidget {
   );
 }
 
-String _dayLabel(DateTime date) =>
-    '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
-
-String _timeLabel(DateTime date) =>
-    '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+String _dateTimeLabel(DateTime date) =>
+    '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year} · ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
 
 String _durationLabel(int seconds) {
   final hours = seconds ~/ 3600;
