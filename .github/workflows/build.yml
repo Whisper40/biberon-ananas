@@ -79,7 +79,8 @@ jobs:
       - name: Read version
         id: version
         shell: bash
-        run: echo "value=$(sed -n 's/^version: *//p' pubspec.yaml)" >> "$GITHUB_OUTPUT"
+        run: |
+          echo "value=$(sed -n 's/^version: *//p' pubspec.yaml)" >> "$GITHUB_OUTPUT"
 
       - name: Build signed release APK
         if: steps.signing.outputs.configured == 'true'
