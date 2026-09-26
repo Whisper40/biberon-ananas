@@ -14,6 +14,8 @@ Application Android de suivi du quotidien de bébé, inspirée du thème Materia
 - Données conservées localement sur l’appareil avec SharedPreferences ; aucune synchronisation externe.
 - Recherche de mises à jour GitHub sur les canaux Stable et Bêta, avec téléchargement et installation d’APK sur Android.
 
+Icône de l’application : [Flaticon, icône 452688](https://cdn-icons-png.flaticon.com/512/452/452688.png).
+
 ## Développement
 
 Flutter 3.44.x / Dart 3.12.x et Java 17 sont utilisés.
@@ -33,7 +35,7 @@ flutter build apk --debug
 
 ## Version et mises à jour Android
 
-La version est déclarée dans `pubspec.yaml` sous la forme `X.Y.Z+build`. Le `versionCode` Android combine les quatre composantes afin de rester croissant d’une release à l’autre. Chaque composante doit rester comprise entre 0 et 99.
+La version est déclarée dans `pubspec.yaml` sous la forme `X.Y.Z+build`. Le `versionCode` Android combine les quatre composantes afin de rester croissant d’une release à l’autre. Chaque composante doit rester comprise entre 0 et 99. La version courante est `1.0.0+2`.
 
 L’application vérifie les releases GitHub du dépôt `Whisper40/biberon-ananas` : Stable consulte la dernière release stable ; Bêta recherche la version la plus élevée parmi les releases publiées et accepte les pré-releases. Une release installable doit inclure un APK signé compatible avec l’identifiant `com.biberon.biberon_ananas`.
 
